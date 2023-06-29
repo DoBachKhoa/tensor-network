@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 alphabet = 'abcdefghijklmnopqrstuvwxyz'
 
 class TensorNetwork(torch.nn.Module):
-    def __init__(self, adj_matrix):
+    def __init__(self, adj_matrix, printing=False):
         # Attributes
         super().__init__()
         assert adj_matrix.shape[0] == adj_matrix.shape[1], 'adj_matrix must be a square matrix.'
@@ -18,7 +18,7 @@ class TensorNetwork(torch.nn.Module):
         self.output_shape = []
         self.edges = []
         self.cores = []
-        print('=======  Tensornetwork object created  =======')
+        if printing: print('=======  Tensornetwork object created  =======')
 
         # Fill core_shape with shape of the core and the edges with edge of form [id1, idx1, id2, idx2]
         for i in range(self.num_core):
@@ -39,10 +39,10 @@ class TensorNetwork(torch.nn.Module):
             tensor = torch.rand(shape, requires_grad=True)
             self.cores.append(tensor)
 
-        print('cores shape: ', self.core_shape)
-        print('core shape: ', [core.shape for core in self.cores])
-        print('output shape: ', self.output_shape)
-        print('==============================================')
+        if printing: print('cores shape: ', self.core_shape)
+        if printing: print('core shape: ', [core.shape for core in self.cores])
+        if printing: print('output shape: ', self.output_shape)
+        if printing: print('==============================================')
 
     def _merge1(self, core, d1, d2):
         # Compresses a tensor along two indices
@@ -108,6 +108,13 @@ class TensorNetwork(torch.nn.Module):
                     edges[i][3] += (D1-1 if edges[i][1] < d2 else D1-2)
         if verbose: print('  (compressing done: {})'.format(output.shape))
 
+    def reset(self):
+        # Randomly reinitializes the weights of the tensor cores
+        self.cores.clear
+        for shape in self.core_shape:
+            tensor = torch.rand(shape, requires_grad=True)
+            self.cores.append(tensor)
+        
     def forward(self, verbose=False):
         # Compresses and calculates the tensor network.
         edges = [[i for i in edge] for edge in self.edges]
@@ -119,7 +126,7 @@ class TensorNetwork(torch.nn.Module):
         return output
 
     def fit(self, target, loss='MSE', lr=0.01, iteration=50, verbose=False):
-        print('----- Fitting with {} loss, lr {}, {} iteration -----'.format(loss, lr, iteration))
+        print('----- Fitting with {} loss, lr {}, {} iteration ... '.format(loss, lr, iteration), end='')
         # Fits the tensor network {repeat} time with lost {loss}
         if loss == 'MSE': criterion = F.mse_loss
         optimizer = torch.optim.SGD(self.cores, lr = lr)
@@ -138,8 +145,7 @@ class TensorNetwork(torch.nn.Module):
             output = self.forward()
             error = criterion(output, target)
 
-        print()
-        print('Output error: {}'.format(error))
+        print(' Done! Output error: {} -----'.format(error))
         return output, error
 
     def draw_graph(self):
@@ -155,7 +161,15 @@ if __name__ == '__main__':
     # upper all equal 1 for an outer-product thingy
     # they should not all 0 otherwise the graph would not connect
     target = torch.rand((10, 11, 12), requires_grad = False)
-    net = TensorNetwork(adj_matrix)
-    net.fit(target, 'MSE', 0.01, 100)
+
+    for a in [1, 2, 3]:
+        adj_matrix[np.triu_indices(3, 1)] = a
+        attemps = []
+        for i in range(1, 6):
+            net = TensorNetwork(adj_matrix)
+            net.reset()
+            _, error = net.fit(target, 'MSE', 0.01, 1000)
+            attemps.append(error)
+        print('Errors for a={}: '.format(a), attemps)
 
 
