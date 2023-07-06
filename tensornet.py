@@ -161,9 +161,10 @@ class TensorNetwork(torch.nn.Module):
         return output
 
     def fit(self, target, loss='MSE', lr=0.01, iteration=50, verbose=False):
-        print('----- Fitting with {} loss, lr {}, {} iteration ... '.format(loss, lr, iteration), end='')
+        print('----- Fitting with {} loss, lr {}, {} iteration ... -----'.format(loss, lr, iteration))
         # Fits the tensor network {repeat} time with lost {loss}
         if loss == 'MSE': criterion = F.mse_loss
+        else: raise NotImplementedError
         optimizer = torch.optim.SGD(self.cores, lr = lr)
         error = 1e9
         output = None
@@ -177,10 +178,10 @@ class TensorNetwork(torch.nn.Module):
             if verbose: print(' Loss at iteration {}: {}'.format(j, loss.item()))
 
         with torch.no_grad():
-            output = self.forward(verbose=verbose)
+            output = self.forward()
             error = criterion(output, target)
 
-        print(' Done! Output error: {} -----'.format(error))
+        print('----- Done! Output error: {} -----'.format(error))
         return output, error
 
     def draw_graph(self):
@@ -192,28 +193,28 @@ if __name__ == '__main__':
 
     ### === Experiment 1 ===
 
-    adj_matrix = np.array([
-        [10, 1, 1], 
-        [0, 11, 1], 
-        [0, 0, 12]
-    ])
-    # upper all equal 1 for an outer-product thingy
-    # they should not all 0 otherwise the graph would not connect
+    # adj_matrix = np.array([
+    #     [10, 1, 1], 
+    #     [0, 11, 1], 
+    #     [0, 0, 12]
+    # ])
+    # # upper all equal 1 for an outer-product thingy
+    # # they should not all 0 otherwise the graph would not connect
 
-    target = torch.rand((10, 11, 12), requires_grad = False)
-    # target = torch.einsum('i, j, k -> ijk', torch.rand((10,), requires_grad = False), torch.rand((11,), requires_grad = False), torch.rand((12,), requires_grad = False))
+    # target = torch.rand((10, 11, 12), requires_grad = False)
+    # # target = torch.einsum('i, j, k -> ijk', torch.rand((10,), requires_grad = False), torch.rand((11,), requires_grad = False), torch.rand((12,), requires_grad = False))
 
-    for a in [1, 2, 3, 4]:
-        adj_matrix[np.triu_indices(3, 1)] = a
-        attemps = []
-        net = TensorNetwork(adj_matrix, printing=False)
-        net.set_mode('greedy')
-        print('Compression ratio (log): ', -np.log(net.compression_ratio()))
-        for i in range(1, 6):
-            net.reset()
-            _, error = net.fit(target, 'MSE', 0.01, 1000)
-            attemps.append(error)
-        print('Errors for a={}: '.format(a), attemps)
+    # for a in [1, 2, 3, 4]:
+    #     adj_matrix[np.triu_indices(3, 1)] = a
+    #     attemps = []
+    #     net = TensorNetwork(adj_matrix, printing=False)
+    #     net.set_mode('greedy')
+    #     print('Compression ratio (log): ', -np.log(net.compression_ratio()))
+    #     for i in range(1, 6):
+    #         net.reset()
+    #         _, error = net.fit(target, 'MSE', 0.01, 1000)
+    #         attemps.append(error)
+    #     print('Errors for a={}: '.format(a), attemps)
 
 
 
@@ -222,9 +223,9 @@ if __name__ == '__main__':
     # target = torch.tensor(plt.imread('lena_gray.gif'), requires_grad = False, dtype=torch.float32)
     # # plt.imshow(plt.imread('lena_gray.gif'))
     # # plt.show()
-    # print('Confirm: ', target.shape, type(target))
+    # # print('Confirm: ', target.shape, type(target))
     # target_ = target[:, :, 0].reshape((4, 4, 4, 4, 4, 4, 4, 4, 4))/256
-    # print('asdfd', target_.shape, target_[0, 0, 0, 0, 0, 0, 0])
+    # # print('asdfd', target_.shape, target_[0, 0, 0, 0, 0, 0, 0])
     # adj_matrix = np.identity(9, dtype='int')*4
     # for i in range(8): adj_matrix[i][i+1] = 4
     # print(adj_matrix)
@@ -232,9 +233,10 @@ if __name__ == '__main__':
     # net = TensorNetwork(adj_matrix)
     # print('Compression ratio (log): ', -np.log(net.compression_ratio()))
     # attemps = []
+    # net.set_mode('greedy')
     # for _ in range(5):
     #     net.reset()
-    #     _, error = net.fit(target_, 'MSE', 0.01, 200)
+    #     _, error = net.fit(target_, 'MSE', 0.0001, 1000)
     #     attemps.append(error)
     # print('Errors for TT: ', attemps)
 
@@ -242,9 +244,10 @@ if __name__ == '__main__':
     # print('Compression ratio (log): ', -np.log(net.compression_ratio()))
     # adj_matrix[0][-1] = 4
     # attemps = []
+    # net.set_mode('greedy')
     # for _ in range(5):
     #     net.reset()
-    #     _, error = net.fit(target_, 'MSE', 0.01, 200)
+    #     _, error = net.fit(target_, 'MSE', 0.0001, 1000)
     #     attemps.append(error)
     # print('Errors for TR: ', attemps)
 
