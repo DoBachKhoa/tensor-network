@@ -4,7 +4,7 @@ import numpy as np
 import math
 import random
 import matplotlib.pyplot as plt
-from utils import MSE, RSE
+from utils import MSE_torch, RSE_torch
 
 alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -186,8 +186,8 @@ class TensorNetwork(torch.nn.Module):
         return output, error
     
     def compute_loss(self, target, loss='MSE'):
-        if loss == 'MSE': return MSE(self.forward(), target)
-        if loss == 'RSE': return RSE(self.forward(), target)
+        if loss == 'MSE': return MSE_torch(self.forward(), target)
+        if loss == 'RSE': return RSE_torch(self.forward(), target)
         raise NotImplementedError
 
     def draw_graph(self):
